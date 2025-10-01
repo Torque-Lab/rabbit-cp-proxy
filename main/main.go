@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"log"
 	"rabbit-cp-proxy/control_plane"
+	"rabbit-cp-proxy/tcp_pipe"
 )
 
 func main() {
@@ -28,6 +29,6 @@ func main() {
 			log.Println("accept error:", err)
 			continue
 		}
-		go tcp_pipe.handleClient(conn)
+		go tcp_pipe.HandleClient(conn)
 	}
 }
