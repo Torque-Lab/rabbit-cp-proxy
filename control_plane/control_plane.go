@@ -19,7 +19,7 @@ var auth_token = os.Getenv("AUTH_TOKEN")
 
 // Call control plane API for user auth
 func GetBackendAddress(username, password string) (string, error) {
-	url := fmt.Sprintf("%s/api/rabbit/auth?username=%s&password=%s&token=%s", controlPlaneURL, username, password, auth_token)
+	url := fmt.Sprintf("%s/api/v1/rabbit/route-table?username=%s&password=%s&auth_token=%s", controlPlaneURL, username, password, auth_token)
 	key := fmt.Sprintf("%s:%s", username, password)
 	tableMutex.RLock()
 	addr, ok := backendAddrTable[key]
@@ -34,10 +34,15 @@ func GetBackendAddress(username, password string) (string, error) {
 	}
 	defer response.Body.Close()
 	var result struct {
+		Message string `json:"message"`
+		Success bool   `json:"success"`
 		Backend string `json:"backend_url"`
 	}
 	if err := json.NewDecoder(response.Body).Decode(&result); err != nil {
 		return "", err
+	}
+	if !result.Success {
+		return "", fmt.Errorf("%s", result.Message)
 	}
 	tableMutex.Lock()
 	backendAddrTable[key] = result.Backend
@@ -49,6 +54,8 @@ func StartUpdateServer() {
 	http.HandleFunc("/update-table", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Update request received")
 		var req struct {
+			Message   string `json:"message"`
+			Success   bool   `json:"success"`
 			AuthToken string `json:"auth_token"`
 			OldKey    string `json:"old_key"`
 			NewKey    string `json:"new_key"`

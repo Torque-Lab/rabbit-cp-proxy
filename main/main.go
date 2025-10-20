@@ -10,7 +10,7 @@ import (
 func main() {
 	go control_plane.StartUpdateServer()
 
-	cert, err := tls.LoadX509KeyPair("wildcard.crt", "wildcard.key")
+	cert, err := tls.LoadX509KeyPair("/etc/ssl/certs/wildcard.crt", "/etc/ssl/certs/wildcard.key")
 	if err != nil {
 		log.Fatal("failed to load TLS cert:", err)
 	}
