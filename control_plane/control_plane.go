@@ -13,13 +13,12 @@ var (
 	// key be like username:password->rabbit_url
 	backendAddrTable = make(map[string]string)
 	tableMutex       = &sync.RWMutex{}
-	controlPlaneURL  = "http://localhost:8080"
+	controlPlaneURL  = os.Getenv("CONTROL_PLANE_URL")
 )
 var auth_token = os.Getenv("AUTH_TOKEN")
 
-// Call control plane API for user auth
 func GetBackendAddress(username, password string) (string, error) {
-	url := fmt.Sprintf("%s/api/v1/rabbit/route-table?username=%s&password=%s&auth_token=%s", controlPlaneURL, username, password, auth_token)
+	url := fmt.Sprintf("%s/api/v1/infra/rabbit/route-table?username=%s&password=%s&auth_token=%s", controlPlaneURL, username, password, auth_token)
 	key := fmt.Sprintf("%s:%s", username, password)
 	tableMutex.RLock()
 	addr, ok := backendAddrTable[key]
@@ -51,7 +50,7 @@ func GetBackendAddress(username, password string) (string, error) {
 }
 
 func StartUpdateServer() {
-	http.HandleFunc("/update-table", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/api/v1/infra/rabbit/update-table", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Update request received")
 		var req struct {
 			Message   string `json:"message"`

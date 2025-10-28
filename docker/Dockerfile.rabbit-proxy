@@ -1,0 +1,20 @@
+
+FROM golang:1.25 AS builder
+WORKDIR /app
+
+COPY go.mod ./
+RUN go mod download
+COPY /tcp_pipe ./tcp_pipe
+COPY /main ./main
+COPY /control_plane ./control_plane
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o rabbit-proxy ./main/main.go
+
+FROM scratch AS runner
+WORKDIR /app
+COPY --from=builder /etc/ssl /etc/ssl
+COPY --chmod=755 --from=builder /app/rabbit-proxy /usr/local/bin/rabbit-proxy
+
+EXPOSE 5671
+EXPOSE 9000
+CMD ["rabbit-proxy"]

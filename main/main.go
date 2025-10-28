@@ -8,18 +8,22 @@ import (
 )
 
 func main() {
+	certPath := "/etc/ssl/certs/tls.crt"
+	keyPath := "/etc/ssl/certs/tls.key"
 	go control_plane.StartUpdateServer()
 
-	cert, err := tls.LoadX509KeyPair("/etc/ssl/certs/wildcard.crt", "/etc/ssl/certs/wildcard.key")
+	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
 	if err != nil {
-		log.Fatal("failed to load TLS cert:", err)
+		log.Println("failed to load TLS cert:", err)
+		return
 	}
 
 	tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}}
 
 	ln, err := tls.Listen("tcp", ":5671", tlsConfig)
 	if err != nil {
-		log.Fatal("TLS listen error:", err)
+		log.Println("TLS listen error:", err)
+		return
 	}
 	log.Println("RabbitMQ proxy listening on :5671")
 
