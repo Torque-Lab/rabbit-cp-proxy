@@ -18,6 +18,7 @@ var (
 var auth_token = os.Getenv("AUTH_TOKEN")
 
 func GetBackendAddress(username, password string) (string, error) {
+	backendAddrTable[fmt.Sprintf("%s:%s", "user", "mypassword")] = "amqp://user:mypassword@localhost:5672"
 	url := fmt.Sprintf("%s/api/v1/infra/rabbit/route-table?username=%s&password=%s&auth_token=%s", controlPlaneURL, username, password, auth_token)
 	key := fmt.Sprintf("%s:%s", username, password)
 	tableMutex.RLock()

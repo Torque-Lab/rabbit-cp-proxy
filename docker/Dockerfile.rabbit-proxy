@@ -7,14 +7,28 @@ RUN go mod download
 COPY /tcp_pipe ./tcp_pipe
 COPY /main ./main
 COPY /control_plane ./control_plane
+COPY /amqphandshake ./amqphandshake
+COPY /entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
+RUN openssl req -x509 -newkey rsa:4096 -sha256 -days 365 \ 
+  -nodes -keyout /etc/ssl/certs/tls.key \
+  -out /etc/ssl/certs/tls.crt \
+  -subj "/C=US/ST=Test/L=Test/O=TestOrg/OU=IT/CN=localhost"
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o rabbit-proxy ./main/main.go
 
-FROM scratch AS runner
+FROM busybox:1.36 AS runner
 WORKDIR /app
+
+RUN addgroup -g 1000 myuser && adduser -D -u 1000 -G myuser myuser
 COPY --from=builder /etc/ssl /etc/ssl
+RUN chown -R myuser:myuser /etc/ssl
+USER myuser
 COPY --chmod=755 --from=builder /app/rabbit-proxy /usr/local/bin/rabbit-proxy
+COPY --chmod=755 --from=builder /app/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 EXPOSE 5671
 EXPOSE 9000
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["rabbit-proxy"]
