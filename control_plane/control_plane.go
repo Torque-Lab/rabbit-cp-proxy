@@ -91,7 +91,7 @@ func StartUpdateServer() {
 	})
 
 	go func() {
-		fmt.Println("Update server listening on :", proxy_plane_port)
+		fmt.Printf("Update server listening on:%s", proxy_plane_port)
 		if err := http.ListenAndServe(":"+proxy_plane_port, nil); err != nil {
 			fmt.Println("Update server error:", err)
 		}

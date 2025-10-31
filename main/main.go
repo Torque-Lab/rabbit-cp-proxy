@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"rabbit-cp-proxy/control_plane"
+	_ "rabbit-cp-proxy/env_config"
 	"rabbit-cp-proxy/tcp_pipe"
 )
 
@@ -22,13 +23,12 @@ func main() {
 	}
 
 	tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}}
-
 	ln, err := tls.Listen("tcp", ":"+proxy_port, tlsConfig)
 	if err != nil {
 		log.Println("TLS listen error:", err)
 		return
 	}
-	log.Println("RabbitMQ proxy listening on :" + proxy_port)
+	log.Printf("RabbitMQ proxy listening on:%s", proxy_port)
 
 	for {
 		conn, err := ln.Accept()
