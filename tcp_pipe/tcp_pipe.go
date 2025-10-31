@@ -5,10 +5,14 @@ import (
 	"io"
 	"log"
 	"net"
+	"os"
 	"rabbit-cp-proxy/amqphandshake"
 	"rabbit-cp-proxy/control_plane"
 	"sync"
 )
+
+var proxy_user = os.Getenv("PROXY_USER")
+var proxy_pass = os.Getenv("PROXY_PASS")
 
 func HandleClient(client net.Conn) {
 	defer client.Close()
@@ -86,7 +90,7 @@ func HandleClient(client net.Conn) {
 		log.Println("failed to read Connection.Start:", err)
 		return
 	}
-	err = amqphandshake.SendConnectionStartOk(rabbit, "proxyuser", "proxypass")
+	err = amqphandshake.SendConnectionStartOk(rabbit, proxy_user, proxy_pass)
 	if err != nil {
 		amqphandshake.SendConnectionClose(client, 403, "CONNECTION_ERROR")
 		log.Println("failed to send Connection.Start-Ok:", err)
