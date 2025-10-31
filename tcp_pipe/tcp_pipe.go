@@ -32,7 +32,6 @@ func HandleClient(client net.Conn) {
 	fmt.Println("Client to Proxy: Received StartOk: user=" + username + " password=" + password)
 
 	backendAddr, err := control_plane.GetBackendAddress(username, password)
-	fmt.Println("backendAddr", backendAddr)
 	if err != nil {
 		log.Println("failed to get backend address:", err)
 		amqphandshake.SendConnectionClose(client, 403, "ACCESS_REFUSED")

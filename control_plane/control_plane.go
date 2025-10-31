@@ -13,12 +13,12 @@ var (
 	// key be like username:password->rabbit_url
 	backendAddrTable = make(map[string]string)
 	tableMutex       = &sync.RWMutex{}
-	controlPlaneURL  = os.Getenv("CONTROL_PLANE_URL")
 )
 var auth_token = os.Getenv("AUTH_TOKEN")
+var proxy_plane_port = os.Getenv("PROXY_PLANE_PORT")
+var controlPlaneURL = os.Getenv("CONTROL_PLANE_URL")
 
 func GetBackendAddress(username, password string) (string, error) {
-	backendAddrTable[fmt.Sprintf("%s:%s", "user", "mypassword")] = "amqp://user:mypassword@localhost:5672"
 	url := fmt.Sprintf("%s/api/v1/infra/rabbit/route-table?username=%s&password=%s&auth_token=%s", controlPlaneURL, username, password, auth_token)
 	key := fmt.Sprintf("%s:%s", username, password)
 	tableMutex.RLock()
@@ -91,8 +91,8 @@ func StartUpdateServer() {
 	})
 
 	go func() {
-		fmt.Println("Update server listening on :9000")
-		if err := http.ListenAndServe(":9000", nil); err != nil {
+		fmt.Println("Update server listening on :", proxy_plane_port)
+		if err := http.ListenAndServe(":"+proxy_plane_port, nil); err != nil {
 			fmt.Println("Update server error:", err)
 		}
 	}()
