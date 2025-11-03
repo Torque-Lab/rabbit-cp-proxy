@@ -3,12 +3,12 @@ name: Build and Deploy Rabbit Gateway
 
 on:
   push:
-    paths:
-      - .github/workflows/aqmp-gatway.yaml
-      - 'docker/Dockerfile.rabbit-proxy'
-      - 'apps/rabbit-proxy/**'
     branches:
       - main
+    paths-ignore:
+      - '**/*.md'                 
+      - '.github/workflows/**'     
+      - '**/*.yml' 
 jobs:
   build:
     runs-on: ubuntu-latest

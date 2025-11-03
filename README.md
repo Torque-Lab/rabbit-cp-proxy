@@ -15,7 +15,7 @@ A high-performance TCP gateway for RabbitMQ that handles SSL termination, authen
 - Protection against malformed AMQP frames
 ## Architecture
 
-```mermaid
+
 sequenceDiagram
     participant C as Client
     participant P as Proxy
