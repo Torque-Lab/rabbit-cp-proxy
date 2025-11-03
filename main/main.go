@@ -9,7 +9,7 @@ import (
 	"rabbit-cp-proxy/tcp_pipe"
 )
 
-var proxy_port = os.Getenv("PROXY_PORT")
+var proxy_port = os.Getenv("PROXY_PORT_RABBIT")
 
 func main() {
 	certPath := "/etc/ssl/certs/tls.crt"
