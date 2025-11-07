@@ -14,7 +14,7 @@ var proxy_port = os.Getenv("PROXY_PORT_RABBIT")
 func main() {
 	certPath := "/etc/ssl/certs/tls.crt"
 	keyPath := "/etc/ssl/certs/tls.key"
-	go control_plane.StartUpdateServer()
+	go control_plane.StartSubscriber()
 
 	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
 	if err != nil {

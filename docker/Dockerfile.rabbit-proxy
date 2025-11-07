@@ -10,6 +10,7 @@ COPY /tcp_pipe ./tcp_pipe
 COPY /main ./main
 COPY /control_plane ./control_plane
 COPY /amqphandshake ./amqphandshake
+COPY /redis_service ./redis_service
 COPY /entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 

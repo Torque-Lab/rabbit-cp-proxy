@@ -1,11 +1,13 @@
 package control_plane
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	redisservice "rabbit-cp-proxy/redis_service"
 	"sync"
 )
 
@@ -15,7 +17,6 @@ var (
 	tableMutex       = &sync.RWMutex{}
 )
 var auth_token = os.Getenv("AUTH_TOKEN")
-var proxy_plane_port = os.Getenv("PROXY_PLANE_PORT")
 var controlPlaneURL = os.Getenv("CONTROL_PLANE_URL")
 
 func GetBackendAddress(username, password string) (string, error) {
@@ -27,6 +28,22 @@ func GetBackendAddress(username, password string) (string, error) {
 	if ok {
 		return addr, nil
 	}
+	ctx := context.Background()
+	redisService := redisservice.GetInstance()
+
+	client := redisService.GetClient(ctx)
+	backendAddr, err := client.Get(ctx, key).Result()
+	if err != nil {
+		log.Println("control plane error:", err)
+		return "", err
+	}
+	if backendAddr != "" {
+		tableMutex.Lock()
+		backendAddrTable[key] = backendAddr
+		tableMutex.Unlock()
+		return backendAddr, nil
+	}
+
 	response, err := http.Get(url)
 	if err != nil {
 		log.Println("control plane error:", err)
@@ -50,50 +67,43 @@ func GetBackendAddress(username, password string) (string, error) {
 	return result.Backend, nil
 }
 
-func StartUpdateServer() {
-	http.HandleFunc("/api/v1/infra/rabbit/update-table", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Update request received")
-		var req struct {
-			Message   string `json:"message"`
-			Success   bool   `json:"success"`
-			AuthToken string `json:"auth_token"`
-			OldKey    string `json:"old_key"`
-			NewKey    string `json:"new_key"`
-			Backend   string `json:"backend_url"`
-		}
+func StartSubscriber() {
+	var req struct {
+		OldKey  string `json:"old_key"`
+		NewKey  string `json:"new_key"`
+		Backend string `json:"backend_url"`
+	}
+	ctx := context.Background()
+	redisService := redisservice.GetInstance()
+	client := redisService.GetClient(ctx)
 
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
-			return
-		}
-		if req.AuthToken != auth_token {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
-		if r.Method != http.MethodPost {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
+	Subscriber := client.Subscribe(ctx, "update-table")
+	go func() {
+		for {
+			msg, err := Subscriber.ReceiveMessage(ctx)
+			if err != nil {
+				fmt.Println("Error receiving message:", err)
+				return
+			}
+			err = json.Unmarshal([]byte(msg.Payload), &req)
+			if err != nil {
+				fmt.Println("Error unmarshalling message:", err)
+				return
+			}
+			if req.OldKey != "" {
+				if _, exists := backendAddrTable[req.OldKey]; exists {
+					delete(backendAddrTable, req.OldKey)
+					fmt.Println("Deleted old key:", req.OldKey)
+				}
+			}
 
-		tableMutex.Lock()
-		defer tableMutex.Unlock()
-
-		if req.OldKey != "" {
-			if _, exists := backendAddrTable[req.OldKey]; exists {
-				delete(backendAddrTable, req.OldKey)
-				fmt.Println("Deleted old key:", req.OldKey)
+			if req.NewKey != "" {
+				tableMutex.Lock()
+				backendAddrTable[req.NewKey] = req.Backend
+				tableMutex.Unlock()
+				fmt.Println("Updated mapping:", req.NewKey, "->", req.Backend)
 			}
 		}
-		backendAddrTable[req.NewKey] = req.Backend
-		fmt.Println("Updated mapping:", req.NewKey, "->", req.Backend)
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
-	})
 
-	go func() {
-		fmt.Printf("Update server listening on:%s", proxy_plane_port)
-		if err := http.ListenAndServe(":"+proxy_plane_port, nil); err != nil {
-			fmt.Println("Update server error:", err)
-		}
 	}()
 }
